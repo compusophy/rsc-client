@@ -21,7 +21,11 @@ if (typeof window === 'undefined') {
     });
 
     mc.members = args[0] === 'members';
-    mc.server = args[1] ? args[1] : '127.0.0.1';
+    
+    // Use the provided server address or default to the Railway domain
+    mc.server = args[1] ? args[1] : 'rsc-server.railway.internal';
+    
+    // Use the provided port or default to the WebSocket port from the server config
     mc.port = args[2] && !isNaN(+args[2]) ? +args[2] : 43595;
 
     mc.threadSleep = 10;
