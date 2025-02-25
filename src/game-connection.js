@@ -31,8 +31,8 @@ class GameConnection extends GameShell {
         this.messageIndex = 0;
 
         // Use the server address from window if available, otherwise use default
-        this.server = (typeof window !== 'undefined' && window.serverAddress) || 'shinkansen.proxy.rlwy.net';
-        this.port = (typeof window !== 'undefined' && window.serverPort) || 55656;
+        this.server = (typeof window !== 'undefined' && window.serverAddress) || 'rsc-server-production.up.railway.app';
+        this.port = (typeof window !== 'undefined' && window.serverPort) || 43595;
 
         this.username = '';
         this.password = '';
