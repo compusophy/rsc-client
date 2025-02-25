@@ -30,8 +30,9 @@ class GameConnection extends GameShell {
         this.packetLastRead = 0;
         this.messageIndex = 0;
 
-        this.server = '127.0.0.1';
-        this.port = 43594;
+        // Use the server address from window if available, otherwise use default
+        this.server = (typeof window !== 'undefined' && window.serverAddress) || 'rsc-server.railway.internal';
+        this.port = (typeof window !== 'undefined' && window.serverPort) || 43595;
 
         this.username = '';
         this.password = '';
