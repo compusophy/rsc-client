@@ -47,8 +47,8 @@ window.debugWebSocket = function() {
         
         // Always replace localhost/127.0.0.1 with the Railway server
         if (url.includes('127.0.0.1') || url.includes('localhost')) {
-            const serverAddress = 'rsc-server.railway.internal';
-            url = url.replace(/ws:\/\/(127\.0\.0\.1|localhost):[0-9]+/, `ws://${serverAddress}:43595`);
+            const serverAddress = 'rsc-server-production.up.railway.app';
+            url = url.replace(/ws:\/\/(127\.0\.0\.1|localhost):[0-9]+/, `wss://${serverAddress}/ws`);
             console.log('Redirecting WebSocket connection to:', url);
         }
         
@@ -73,8 +73,8 @@ window.debugWebSocket = function() {
 
 // Add a function to create WebSockets with the correct URL
 window.createWebSocket = function(path) {
-    const serverAddress = 'rsc-server.railway.internal';
-    const url = `ws://${serverAddress}:43595${path || ''}`;
+    const serverAddress = 'rsc-server-production.up.railway.app';
+    const url = `wss://${serverAddress}/ws${path || ''}`;
     console.log('Creating WebSocket with URL:', url);
     return new WebSocket(url);
 };
