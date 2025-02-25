@@ -11,9 +11,8 @@ if (typeof window === 'undefined') {
     
     // Override the WebSocket constructor
     window.WebSocket = function(url, protocols) {
-        // Check if this is a connection to localhost
+        // Always replace localhost/127.0.0.1 with the Railway server
         if (url.includes('127.0.0.1') || url.includes('localhost')) {
-            // Replace with the correct server address
             const serverAddress = 'rsc-server-production.up.railway.app';
             url = url.replace(/ws:\/\/(127\.0\.0\.1|localhost):[0-9]+/, `ws://${serverAddress}:43595`);
             console.log('Redirecting WebSocket connection to:', url);
@@ -32,7 +31,39 @@ if (typeof window === 'undefined') {
     
     // Set the prototype to match the original
     window.WebSocket.prototype = OriginalWebSocket.prototype;
+    
+    // Also patch any existing WebSocket instances
+    if (window.WebSockets) {
+        for (let i = 0; i < window.WebSockets.length; i++) {
+            const ws = window.WebSockets[i];
+            if (ws.url && (ws.url.includes('127.0.0.1') || ws.url.includes('localhost'))) {
+                // Close and recreate with the correct URL
+                const newUrl = ws.url.replace(/ws:\/\/(127\.0\.0\.1|localhost):[0-9]+/, 
+                                             `ws://rsc-server-production.up.railway.app:43595`);
+                const newWs = new OriginalWebSocket(newUrl, ws.protocol);
+                
+                // Copy event handlers
+                if (ws.onopen) newWs.onopen = ws.onopen;
+                if (ws.onclose) newWs.onclose = ws.onclose;
+                if (ws.onerror) newWs.onerror = ws.onerror;
+                if (ws.onmessage) newWs.onmessage = ws.onmessage;
+                
+                window.WebSockets[i] = newWs;
+            }
+        }
+    }
+    
+    // Add a global variable to indicate our patch is active
+    window.__websocketPatched = true;
 })();
+
+// Add a function to create WebSockets with the correct URL
+window.createWebSocket = function(path) {
+    const serverAddress = 'rsc-server-production.up.railway.app';
+    const url = `ws://${serverAddress}:43595${path || ''}`;
+    console.log('Creating WebSocket with URL:', url);
+    return new WebSocket(url);
+};
 
 (async () => {
     const mcContainer = document.createElement('div');
@@ -57,6 +88,10 @@ if (typeof window === 'undefined') {
     
     // Use the provided port or default to the WebSocket port from the server config
     mc.port = args[2] && !isNaN(+args[2]) ? +args[2] : 43595;
+
+    // Store these globally to help with WebSocket creation
+    window.serverAddress = mc.server;
+    window.serverPort = mc.port;
 
     mc.threadSleep = 10;
 
