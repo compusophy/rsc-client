@@ -5,80 +5,6 @@ if (typeof window === 'undefined') {
     throw new Error('rsc-client needs to run in a browser');
 }
 
-// Add a global debug function
-window.debugWebSocket = function() {
-    console.log('WebSocket debug info:');
-    console.log('Server address:', window.serverAddress);
-    console.log('Server port:', window.serverPort);
-    console.log('WebSocket patch active:', window.__websocketPatched ? 'Yes' : 'No');
-    
-    // Try to find all WebSocket instances
-    const allObjects = [];
-    for (let i = 0; i < 10000; i++) {
-        try {
-            if (window['ws'+i] instanceof WebSocket) {
-                allObjects.push({name: 'ws'+i, obj: window['ws'+i]});
-            }
-        } catch (e) {}
-    }
-    console.log('Found WebSocket objects:', allObjects);
-    
-    // Try to create a test connection
-    try {
-        const testWs = new WebSocket(`ws://rsc-server.railway.internal:43595`);
-        console.log('Test WebSocket created:', testWs);
-        testWs.onopen = () => console.log('Test WebSocket connected!');
-        testWs.onerror = (e) => console.log('Test WebSocket error:', e);
-    } catch (e) {
-        console.error('Failed to create test WebSocket:', e);
-    }
-};
-
-// More aggressive WebSocket override
-(function() {
-    console.log('Applying WebSocket patch...');
-    
-    // Store the original WebSocket constructor
-    const OriginalWebSocket = window.WebSocket;
-    
-    // Override the WebSocket constructor
-    window.WebSocket = function(url, protocols) {
-        console.log('WebSocket constructor called with URL:', url);
-        
-        // Always replace localhost/127.0.0.1 with the Railway server
-        if (url.includes('127.0.0.1') || url.includes('localhost')) {
-            const serverAddress = 'rsc-server-production.up.railway.app';
-            url = url.replace(/ws:\/\/(127\.0\.0\.1|localhost):[0-9]+/, `wss://${serverAddress}/ws`);
-            console.log('Redirecting WebSocket connection to:', url);
-        }
-        
-        // Call the original WebSocket constructor with the modified URL
-        return new OriginalWebSocket(url, protocols);
-    };
-    
-    // Copy all properties from the original WebSocket constructor
-    for (const prop in OriginalWebSocket) {
-        if (OriginalWebSocket.hasOwnProperty(prop)) {
-            window.WebSocket[prop] = OriginalWebSocket[prop];
-        }
-    }
-    
-    // Set the prototype to match the original
-    window.WebSocket.prototype = OriginalWebSocket.prototype;
-    
-    // Add a global variable to indicate our patch is active
-    window.__websocketPatched = true;
-    console.log('WebSocket patch applied successfully');
-})();
-
-// Add a function to create WebSockets with the correct URL
-window.createWebSocket = function(path) {
-    const serverAddress = 'rsc-server-production.up.railway.app';
-    const url = `wss://${serverAddress}/ws${path || ''}`;
-    console.log('Creating WebSocket with URL:', url);
-    return new WebSocket(url);
-};
-
 (async () => {
     const mcContainer = document.createElement('div');
     const args = window.location.hash.slice(1).split(',');
@@ -97,18 +23,11 @@ window.createWebSocket = function(path) {
 
     mc.members = args[0] === 'members';
     
-    // Use the provided server address or default to the Railway domain
-    mc.server = args[1] ? args[1] : 'rsc-server.railway.internal';
+    // Use the provided server address or default to the Railway proxy
+    mc.server = args[1] ? args[1] : 'shinkansen.proxy.rlwy.net';
     
-    // Use the provided port or default to the WebSocket port from the server config
-    mc.port = args[2] && !isNaN(+args[2]) ? +args[2] : 43595;
-
-    // Store these globally to help with WebSocket creation
-    window.serverAddress = mc.server;
-    window.serverPort = mc.port;
-    
-    // Store the mudclient instance globally for debugging
-    window.mc = mc;
+    // Use the provided port or default to the WebSocket port from the proxy
+    mc.port = args[2] && !isNaN(+args[2]) ? +args[2] : 55656;
 
     mc.threadSleep = 10;
 
@@ -120,13 +39,6 @@ window.createWebSocket = function(path) {
         mcContainer.requestFullscreen();
     };
     document.body.appendChild(fullscreen);
-    
-    // Add debug button
-    const debugButton = document.createElement('button');
-    debugButton.innerText = 'Debug';
-    debugButton.style.marginLeft = '10px';
-    debugButton.onclick = window.debugWebSocket;
-    document.body.appendChild(debugButton);
 
     await mc.startApplication(512, 346, 'Runescape by Andrew Gower');
 })();
@@ -41434,8 +41346,8 @@ class GameConnection extends GameShell {
         this.messageIndex = 0;
 
         // Use the server address from window if available, otherwise use default
-        this.server = (typeof window !== 'undefined' && window.serverAddress) || 'rsc-server.railway.internal';
-        this.port = (typeof window !== 'undefined' && window.serverPort) || 43595;
+        this.server = (typeof window !== 'undefined' && window.serverAddress) || 'shinkansen.proxy.rlwy.net';
+        this.port = (typeof window !== 'undefined' && window.serverPort) || 55656;
 
         this.username = '';
         this.password = '';
