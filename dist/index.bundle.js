@@ -45182,8 +45182,9 @@ class Socket {
     connect() {
         return new Promise((resolve, reject) => {
             if (typeof this.host === 'string') {
+                // Always use secure WebSockets
                 this.client = new WebSocket(
-                    `ws://${this.host}:${this.port}`,
+                    `wss://${this.host}:${this.port}`,
                     'binary'
                 );
             } else if (this.host.constructor.name === 'Worker') {
@@ -45384,7 +45385,6 @@ class Socket {
 }
 
 module.exports = Socket;
-
 }).call(this)}).call(this,require("buffer").Buffer)
 },{"./worker-socket":265,"buffer":77}],265:[function(require,module,exports){
 const { uid } = require('rand-token');
