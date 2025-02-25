@@ -22,11 +22,11 @@ if (typeof window === 'undefined') {
 
     mc.members = args[0] === 'members';
     
-    // Use the provided server address or default to the Railway proxy
-    mc.server = args[1] ? args[1] : 'shinkansen.proxy.rlwy.net';
+    // Use the provided server address or default to the Railway server
+    mc.server = args[1] ? args[1] : 'rsc-server-production.up.railway.app';
     
-    // Use the provided port or default to the WebSocket port from the proxy
-    mc.port = args[2] && !isNaN(+args[2]) ? +args[2] : 55656;
+    // Use the provided port or default to the WebSocket port
+    mc.port = args[2] && !isNaN(+args[2]) ? +args[2] : 43595;
 
     mc.threadSleep = 10;
 
