@@ -4,41 +4,7 @@ if (typeof window === 'undefined') {
     throw new Error('rsc-client needs to run in a browser');
 }
 
-// Add Farcaster Frame SDK
-function addFarcasterSupport() {
-    // Add meta tag for Farcaster Frame
-    const metaTag = document.createElement('meta');
-    metaTag.setAttribute('property', 'fc:frame');
-    metaTag.setAttribute('content', JSON.stringify({
-        version: 'next',
-        imageUrl: 'https://rsc-client-production.up.railway.app/favicon.png',
-        button: {
-            title: 'play',
-            action: {
-                type: 'launch_frame',
-                name: 'RuneScape Classic',
-                url: 'https://rsc-client-production.up.railway.app/',
-                splashImageUrl: 'https://rsc-client-production.up.railway.app/favicon.png',
-                splashBackgroundColor: '#000000'
-            }
-        }
-    }));
-    document.head.appendChild(metaTag);
-    
-    // Add Farcaster SDK script
-    const script = document.createElement('script');
-    script.src = 'https://cdn.jsdelivr.net/npm/@farcaster/frame-sdk/dist/index.min.js';
-    script.onload = function() {
-        // Initialize Farcaster Frame SDK when loaded
-        if (window.frame && window.frame.sdk) {
-            window.frame.sdk.actions.ready();
-        }
-    };
-    document.body.appendChild(script);
-}
-
-// Call the function to add Farcaster support
-addFarcasterSupport();
+// Remove Farcaster Frame support code
 
 (async () => {
     // Create a wrapper container that takes up the full viewport

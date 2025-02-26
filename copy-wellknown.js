@@ -2,7 +2,7 @@ const fs = require('fs');
 const path = require('path');
 
 // Create wellknown directory in dist (without the dot)
-const wellKnownDir = path.join(__dirname, 'dist', 'wellknown');
+const wellKnownDir = path.join(__dirname, 'dist', '.wellknown');
 if (!fs.existsSync(wellKnownDir)) {
   fs.mkdirSync(wellKnownDir, { recursive: true });
 }

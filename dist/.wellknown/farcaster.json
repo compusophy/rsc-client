@@ -10,7 +10,7 @@
       "iconUrl": "https://rsc-client-production.up.railway.app/favicon.png",
       "buttonTitle": "play",
       "imageUrl": "https://rsc-client-production.up.railway.app/favicon.png",
-      "homeUrl": "https://rsc-client-production.up.railway.app",
+      "homeUrl": "https://rsc-client-production.up.railway.app/",
       "splashImageUrl": "https://rsc-client-production.up.railway.app/favicon.png",
       "splashBackgroundColor": "#000000"
     }
