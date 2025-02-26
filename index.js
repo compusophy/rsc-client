@@ -25,8 +25,9 @@ if (typeof window === 'undefined') {
     // Use the provided server address or default to the Railway server
     mc.server = args[1] ? args[1] : 'rsc-server-production.up.railway.app';
     
-    // Use the provided port or default to the WebSocket port
-    mc.port = args[2] && !isNaN(+args[2]) ? +args[2] : 43595;
+    // Don't specify a port for Railway domains
+    mc.port = args[2] && !isNaN(+args[2]) ? +args[2] : 
+        (mc.server.includes('railway.app') ? null : 43595);
 
     mc.threadSleep = 10;
 

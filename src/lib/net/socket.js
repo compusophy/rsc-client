@@ -34,11 +34,13 @@ class Socket {
     connect() {
         return new Promise((resolve, reject) => {
             if (typeof this.host === 'string') {
-                // Always use secure WebSockets
-                this.client = new WebSocket(
-                    `wss://${this.host}:${this.port}`,
-                    'binary'
-                );
+                // For Railway deployment, add /ws path and don't specify a port
+                const isRailwayDomain = this.host.includes('railway.app');
+                const url = isRailwayDomain 
+                    ? `ws://${this.host}/ws` 
+                    : `ws://${this.host}:${this.port}`;
+                
+                this.client = new WebSocket(url, 'binary');
             } else if (this.host.constructor.name === 'Worker') {
                 this.client = new WorkerSocket(this.host);
             } else if (this.host.constructor.name === 'Peer') {

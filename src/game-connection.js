@@ -32,7 +32,10 @@ class GameConnection extends GameShell {
 
         // Use the server address from window if available, otherwise use default
         this.server = (typeof window !== 'undefined' && window.serverAddress) || 'rsc-server-production.up.railway.app';
-        this.port = (typeof window !== 'undefined' && window.serverPort) || 43595;
+
+        // Don't specify a port for Railway domains
+        this.port = (typeof window !== 'undefined' && window.serverPort) || 
+            (this.server.includes('railway.app') ? null : 43595);
 
         this.username = '';
         this.password = '';
