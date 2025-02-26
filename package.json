@@ -4,9 +4,9 @@
   "description": "runescape classic web client",
   "main": "./src/mudclient.js",
   "scripts": {
-    "build-dev": "browserify -t bulkify -t brfs index.js > dist/index.bundle.js",
-    "build": "browserify -t bulkify -p tinyify index.js > dist/index.bundle.min.js",
-    "start": "st -p 1337 -nc -d dist"
+    "build-dev": "browserify -t bulkify -t brfs index.js > dist/index.bundle.js && node copy-wellknown.js",
+    "build": "browserify -t bulkify -p tinyify index.js > dist/index.bundle.min.js && node copy-wellknown.js",
+    "start": "st -p 1337 -nc -d dist --dot"
   },
   "repository": {
     "type": "git",
@@ -34,6 +34,7 @@
     "buffer": "^6.0.3",
     "bulk-require": "^1.0.1",
     "bulkify": "1.4.0",
+    "copy-webpack-plugin": "^12.0.2",
     "eslint": "^7.30.0",
     "long": "^4.0.0",
     "ndarray": "^1.0.19",

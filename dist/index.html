@@ -4,6 +4,23 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <title>Runescape by Andrew Gower</title>
+        <meta
+            property="fc:frame"
+            content='{
+                "version": "next",
+                "imageUrl": "https://compu-webpack.vercel.app/assets/splash.png",
+                "button": {
+                    "title": "play",
+                    "action": {
+                        "type": "launch_frame",
+                        "name": "Learn Farcaster",
+                        "url": "https://compu-webpack.vercel.app/",
+                        "splashImageUrl": "https://compu-webpack.vercel.app/assets/splash.png",
+                        "splashBackgroundColor": "#f7f7f7"
+                    }
+                }
+            }'
+        />
         <style>
             body {
                 background-color: #000;
@@ -11,5 +28,13 @@
             }
         </style>
     </head>
-    <body><script src="./index.bundle.js"></script></body>
+    <body>
+        <script src="https://cdn.jsdelivr.net/npm/@farcaster/frame-sdk/dist/index.min.js"></script>
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                frame.sdk.actions.ready();
+            });
+        </script>
+        <script src="./index.bundle.js"></script>
+    </body>
 </html>
