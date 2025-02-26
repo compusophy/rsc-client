@@ -40,7 +40,7 @@ mc.threadSleep = 10;
 
 if you don't want to host a separate websockets server, you can
 pass a [Web Worker](https://developer.mozilla.org/en-US/docs/Web/API/Worker/Worker)
-instance of rsc-server into the `.server` property instead.
+instance of rsc-server into the `.server` property instead..
 
 see https://github.com/2003scape/rsc-server#browser-usage
 
