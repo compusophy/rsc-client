@@ -4706,6 +4706,137 @@ class mudclient extends GameConnection {
             this.mobileKeyboardUpdate();
         }, 125);
     }
+
+    mobileKeyboardUpdate() {
+        if (!this.mobileInputEl) return;
+        
+        // If no visible input, close the keyboard
+        if (this.mobileInputEl.style.display === 'none') {
+            clearInterval(this.keyboardUpdateInterval);
+            return;
+        }
+        
+        // Get the current input text
+        const inputValue = this.mobileInputEl.value || '';
+        
+        // Find the panel with focus
+        let activePanel = null;
+        for (const panel of Object.values(this.panels || {})) {
+            if (panel.focusControlIndex !== -1) {
+                activePanel = panel;
+                break;
+            }
+        }
+        
+        // Update the appropriate input
+        if (activePanel) {
+            activePanel.controlText[activePanel.focusControlIndex] = inputValue;
+        } else if (this.loginScreen === 1 || this.loginScreen === 2) {
+            // On login screen
+            if (this.loginUserInput === '' || this.loginUserInput === null) {
+                this.loginUserInput = inputValue;
+            } else {
+                this.loginPassInput = inputValue;
+            }
+        } else {
+            // In-game chat
+            this.inputTextCurrent = inputValue;
+        }
+    }
+
+    closeKeyboard() {
+        if (this.keyboardUpdateInterval) {
+            clearInterval(this.keyboardUpdateInterval);
+        }
+        
+        if (this.mobileInputEl) {
+            this.mobileInputEl.style.display = 'none';
+            this.mobileInputEl.blur();
+        }
+        
+        if (this.mobilePassword) {
+            this.mobilePassword.style.display = 'none';
+            this.mobilePassword.blur();
+        }
+    }
+
+    createMobileInputs() {
+        // Create text input if doesn't exist
+        if (!this.mobileInput) {
+            this.mobileInput = document.createElement('input');
+            this.mobileInput.type = 'text';
+            this.mobileInput.style.position = 'absolute';
+            this.mobileInput.style.display = 'none';
+            this.mobileInput.autocomplete = 'off';
+            Object.assign(this.mobileInput.style, {
+                backgroundColor: 'rgba(0,0,0,0.7)',
+                color: '#fff',
+                border: '1px solid #444',
+                borderRadius: '4px',
+                padding: '8px',
+                fontSize: '16px'
+            });
+            document.body.appendChild(this.mobileInput);
+            
+            // Handle input submission
+            this.mobileInput.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    this.closeKeyboard();
+                    
+                    // Find the panel with focus and click it
+                    for (const panel of Object.values(this.panels || {})) {
+                        if (panel.focusControlIndex !== -1) {
+                            panel.controlClicked[panel.focusControlIndex] = true;
+                            break;
+                        }
+                    }
+                }
+            });
+        }
+        
+        // Create password input if doesn't exist
+        if (!this.mobilePassword) {
+            this.mobilePassword = document.createElement('input');
+            this.mobilePassword.type = 'password';
+            this.mobilePassword.style.position = 'absolute';
+            this.mobilePassword.style.display = 'none';
+            this.mobilePassword.autocomplete = 'off';
+            Object.assign(this.mobilePassword.style, {
+                backgroundColor: 'rgba(0,0,0,0.7)',
+                color: '#fff',
+                border: '1px solid #444',
+                borderRadius: '4px',
+                padding: '8px',
+                fontSize: '16px'
+            });
+            document.body.appendChild(this.mobilePassword);
+            
+            // Handle password submission
+            this.mobilePassword.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    this.closeKeyboard();
+                    
+                    // Find the panel with focus and click it
+                    for (const panel of Object.values(this.panels || {})) {
+                        if (panel.focusControlIndex !== -1) {
+                            panel.controlClicked[panel.focusControlIndex] = true;
+                            break;
+                        }
+                    }
+                }
+            });
+        }
+    }
+
+    async startApplication(width, height, title) {
+        // Create mobile inputs when starting the application
+        if (this.options.mobile) {
+            this.createMobileInputs();
+        }
+        
+        // Continue with original startApplication code
+        await super.startApplication(width, height, title);
+    }
 }
 
 module.exports = mudclient;

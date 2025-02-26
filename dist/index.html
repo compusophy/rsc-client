@@ -25,27 +25,21 @@
             body {
                 background-color: #000;
                 margin: 0;
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-            }
-            
-            #gameContainer {
-                width: 100%;
-                display: flex;
-                justify-content: center;
+                padding: 0;
+                height: 100vh;
+                overflow: hidden;
             }
             
             #keyboardButton {
                 position: fixed;
-                bottom: 10px;
-                right: 10px;
-                background-color: rgba(0, 0, 0, 0.6);
-                color: white;
-                border: 1px solid rgba(255, 255, 255, 0.5);
-                border-radius: 5px;
-                padding: 8px 12px;
-                font-size: 14px;
+                bottom: 20px;
+                right: 20px;
+                background-color: rgba(0, 0, 0, 0.7);
+                color: #fff;
+                border: 2px solid #444;
+                border-radius: 6px;
+                padding: 10px 15px;
+                font-size: 16px;
                 z-index: 1000;
                 cursor: pointer;
             }
@@ -59,51 +53,51 @@
             });
         </script>
         
-        <div id="gameContainer">
-            <!-- The game will be inserted here -->
-        </div>
-        
-        <button id="keyboardButton">⌨️</button>
+        <button id="keyboardButton">⌨️ Text</button>
         
         <script src="./index.bundle.js"></script>
         
         <script>
-            // Simplified keyboard handling
             document.getElementById('keyboardButton').addEventListener('click', function() {
-                // First try username/password fields for login
-                const usernameInput = prompt("Enter username:");
-                if (usernameInput !== null && usernameInput !== '') {
-                    // Set username in login UI
-                    if (window.mc) {
-                        window.mc.loginUserInput = usernameInput;
-                        
-                        // Now prompt for password
-                        const passwordInput = prompt("Enter password:");
-                        if (passwordInput !== null) {
-                            window.mc.loginPassInput = passwordInput;
-                            
-                            // Simulate clicking the login button by setting flag
-                            window.mc.loginButtonClicked = true;
-                        }
-                    } else {
-                        // For general text input, set as chat
-                        if (window.mc) {
-                            window.mc.inputTextCurrent = usernameInput;
-                            window.mc.inputTextFinal = usernameInput;
-                            
-                            // Simulate Enter key press to submit text
-                            const event = new KeyboardEvent('keydown', {
-                                key: 'Enter',
-                                keyCode: 13,
-                                which: 13,
-                                bubbles: true
-                            });
-                            document.dispatchEvent(event);
-                        } else {
-                            alert("Game client not found. Try refreshing the page.");
-                        }
-                    }
+                if (!window.mc) {
+                    alert("Game not loaded yet. Please try again in a moment.");
+                    return;
                 }
+                
+                // Get textual input via prompt
+                const inputText = prompt("Enter text:");
+                if (inputText === null || inputText === "") return;
+                
+                // Check login screen first
+                if (window.mc.loginScreen === 1 || window.mc.loginScreen === 2) {
+                    // We're at the login screen
+                    if (window.mc.loginUserInput === "") {
+                        // Username field is empty, fill it
+                        window.mc.loginUserInput = inputText;
+                    } else {
+                        // Username field has text, fill password
+                        window.mc.loginPassInput = inputText;
+                    }
+                    return;
+                }
+                
+                // If we're in the game, this is likely a chat message
+                window.mc.inputTextCurrent = inputText;
+                window.mc.inputTextFinal = inputText;
+                
+                // Force a key press to submit the text
+                setTimeout(function() {
+                    // Create and dispatch an Enter keypress
+                    const enterEvent = new KeyboardEvent('keydown', {
+                        bubbles: true,
+                        cancelable: true,
+                        key: 'Enter',
+                        code: 'Enter',
+                        keyCode: 13,
+                        which: 13
+                    });
+                    document.dispatchEvent(enterEvent);
+                }, 100);
             });
         </script>
     </body>
