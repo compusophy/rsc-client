@@ -127,18 +127,23 @@ class Panel {
             this.mouseMetaButtonHeld = 0;
         }
 
-        if (this.surface.game.options.mobile && isDown === 1) {
+        // TODO i don't think we need this? what was controlType 15?
+        /*if (lastButton === 1 || this.mouseMetaButtonHeld > 20) {
             for (let i = 0; i < this.controlCount; i++) {
-                if (this.controlType[i] === controlTypes.TEXT_INPUT &&
-                    this.mouseX >= this.controlX[i] && 
+                if (
+                    this.controlShown[i] &&
+                    this.controlType[i] === 15 &&
+                    this.mouseX >= this.controlX[i] &&
+                    this.mouseY >= this.controlY[i] &&
                     this.mouseX <= this.controlX[i] + this.controlWidth[i] &&
-                    this.mouseY >= this.controlY[i] - 12 && 
-                    this.mouseY <= this.controlY[i] + 4) {
-                    
-                    this.setMobileFocus(i);
+                    this.mouseY <= this.controlY[i] + this.controlHeight[i]
+                ) {
+                    this.controlClicked[i] = true;
                 }
             }
-        }
+
+            this.mouseMetaButtonHeld -= 5;
+        }*/
     }
 
     isClicked(control) {
@@ -163,9 +168,7 @@ class Panel {
             const inputLen = this.controlText[this.focusControlIndex].length;
 
             if (key === 8 && inputLen > 0) {
-                this.controlText[
-                    this.focusControlIndex
-                ] = this.controlText[
+                this.controlText[this.focusControlIndex] = this.controlText[
                     this.focusControlIndex
                 ].slice(0, inputLen - 1);
             }

@@ -8,28 +8,27 @@ if (typeof window === 'undefined') {
 // Remove Farcaster Frame support code
 
 (async () => {
-    // Create a wrapper container for the game
+    // Create a wrapper container that takes up the full viewport
     const wrapperContainer = document.createElement('div');
     wrapperContainer.style.display = 'flex';
     wrapperContainer.style.justifyContent = 'center';
     wrapperContainer.style.alignItems = 'center';
-    wrapperContainer.style.height = '100vh';
     wrapperContainer.style.width = '100%';
+    wrapperContainer.style.height = '100vh';
+    wrapperContainer.style.margin = '0';
+    wrapperContainer.style.padding = '0';
+    wrapperContainer.style.overflow = 'hidden';
     
     // Create the game container
     const mcContainer = document.createElement('div');
+    // We don't set dimensions here - let the game set them
     
     // Add the game container to the wrapper
     wrapperContainer.appendChild(mcContainer);
     
     const args = window.location.hash.slice(1).split(',');
     const mc = new mudclient(mcContainer);
-    
-    // Detect if we're on mobile
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-    // Make client globally accessible
-    window.mc = mc;
     window.mcOptions = mc.options;
 
     Object.assign(mc.options, {
@@ -38,16 +37,21 @@ if (typeof window === 'undefined') {
         resetCompass: true,
         zoomCamera: true,
         accountManagement: true,
-        mobile: isMobile  // Only enable mobile mode on actual mobile devices
+        mobile: false
     });
 
     mc.members = args[0] === 'members';
+    
+    // Use the provided server address or default to the Railway server
     mc.server = args[1] ? args[1] : 'rsc-server-production.up.railway.app';
+    
+    // Don't specify a port for Railway domains
     mc.port = args[2] && !isNaN(+args[2]) ? +args[2] : 
         (mc.server.includes('railway.app') ? null : 43595);
+
     mc.threadSleep = 10;
-    
-    // Style the body
+
+    // Style the body to ensure full height and remove margins
     document.body.style.margin = '0';
     document.body.style.padding = '0';
     document.body.style.height = '100vh';
@@ -58,7 +62,6 @@ if (typeof window === 'undefined') {
 
     await mc.startApplication(512, 346, 'Runescape by Andrew Gower');
 })();
-
 },{"./src/mudclient":266}],2:[function(require,module,exports){
 /** Burrows-Wheeler transform, computed with the Induced Sorting Suffix Array
  *  construction mechanism (sais).  Code is a port of:
@@ -43988,7 +43991,7 @@ const version = require('./version');
 const sleep = require('sleep-promise');
 
 const CHAR_MAP =
-    'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!"\xa3$%^&' +
+    'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!"\243$%^&' +
     "*()-_=+[{]};:'@#~,<.>/?\\| ";
 
 const FONTS = [
@@ -44049,7 +44052,7 @@ class GameShell {
             accountManagement: true,
             fpsCounter: false,
             retryLoginOnDisconnect: true,
-            mobile: false  // Default to desktop mode
+            mobile: false
         };
 
         this.middleButtonDown = false;
@@ -44111,11 +44114,7 @@ class GameShell {
         this.appletWidth = width;
         this.appletHeight = height;
 
-        // Detect if we're actually on a mobile device
-        const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        
-        // Setup touch handlers for mobile devices, mouse handlers for desktop
-        if (this.options.mobile && isMobileDevice) {
+        if (this.options.mobile) {
             this._canvas.addEventListener('touchstart', (e) => {
                 // Prevent default behavior for better control but allow scrolling
                 if (e.touches.length === 1) {
@@ -44223,7 +44222,6 @@ class GameShell {
                 this.mouseReleased(e);
             });
         } else {
-            // Desktop mouse handlers
             this._canvas.addEventListener(
                 'mousedown',
                 this.mousePressed.bind(this)
@@ -44296,36 +44294,25 @@ class GameShell {
     }
 
     openKeyboard(type = 'text', text, maxLength, style) {
-        console.log('Opening mobile keyboard', type, text);
-        
-        // Choose the right input element based on type
-        this.mobileInputEl = (type === 'password') ? this.mobilePassword : this.mobileInput;
-        
-        // Set up the input
-        this.mobileInputEl.value = text || '';
-        this.mobileInputEl.maxLength = maxLength || 256;
-        
-        // Position and style the input
+        this.mobileInputCaret = -1;
+        this.lastMobileInput = text;
+        this.toggleKeyboard = true;
+
+        this.mobileInputEl =
+            type === 'password' ? this.mobilePassword : this.mobileInput;
+
+        this.mobileInputEl.value = text;
+        this.mobileInputEl.maxLength = maxLength;
+
         this.mobileInputEl.style.display = 'block';
-        
-        // Apply custom styles if provided
-        if (style) {
-            Object.assign(this.mobileInputEl.style, style);
+
+        for (const [name, value] of Object.entries(style)) {
+            this.mobileInputEl.style[name] = value;
         }
-        
-        // Focus the input to show keyboard
-        setTimeout(() => {
-            this.mobileInputEl.focus();
-            
-            // Start update interval to sync input with game
-            if (this.keyboardUpdateInterval) {
-                clearInterval(this.keyboardUpdateInterval);
-            }
-            
-            this.keyboardUpdateInterval = setInterval(() => {
-                this.mobileKeyboardUpdate();
-            }, 125);
-        }, 100);
+
+        this.keyboardUpdateInterval = setInterval(() => {
+            this.mobileKeyboardUpdate();
+        }, 125);
     }
 
     mobileKeyDown(e) {
@@ -44336,32 +44323,22 @@ class GameShell {
     }
 
     mobileKeyboardUpdate() {
-        if (!this.mobileInputEl) return;
-        
+        this.mobileInputCaret = this.mobileInputEl.selectionStart;
+
         const newInput = this.mobileInputEl.value;
-        if (newInput === this.lastMobileInput) return;
-        
-        console.log('Input changed:', newInput);
-        
-        // In loginScreen mode, update panel text directly
-        if (this.loginScreen === 1 || this.loginScreen === 2) {
-            // Let the panel handle it
-        } else {
-            // For in-game chat input
-            // Clear previous input
-            for (let i = 0; i < this.lastMobileInput.length; i++) {
-                this.keyPressed({ keyCode: 8 }); // Backspace
-            }
-            
-            // Type new input
-            for (let i = 0; i < newInput.length; i++) {
-                this.keyPressed({ 
-                    key: newInput[i],
-                    keyCode: newInput.charCodeAt(i)
-                });
-            }
+
+        if (newInput === this.lastMobileInput) {
+            return;
         }
-        
+
+        for (let i = 0; i < this.lastMobileInput.length; i += 1) {
+            this.keyPressed({ keyCode: keycodes.BACKSPACE });
+        }
+
+        for (let i = 0; i < newInput.length; i += 1) {
+            this.keyPressed({ key: newInput[i] });
+        }
+
         this.lastMobileInput = newInput;
     }
 
@@ -44942,7 +44919,6 @@ class GameShell {
 }
 
 module.exports = GameShell;
-
 },{"./bzlib":251,"./lib/graphics/color":259,"./lib/graphics/font":260,"./lib/graphics/graphics":261,"./lib/keycodes":262,"./lib/net/socket":264,"./surface":303,"./utility":332,"./version":333,"sleep-promise":230,"tga-js":247}],259:[function(require,module,exports){
 class Color {
     constructor(r, g, b, a = 255) {
@@ -50201,198 +50177,9 @@ class mudclient extends GameConnection {
 
         return gameModel;
     }
-
-    openKeyboard(type = 'text', text, maxLength, style) {
-        if (!this.options.mobile) {
-            return;
-        }
-        
-        console.log('Opening mobile keyboard', type, text);
-        
-        // Choose the right input element based on type
-        this.mobileInputEl = (type === 'password') ? this.mobilePassword : this.mobileInput;
-        
-        // Set up the input
-        this.mobileInputEl.value = text || '';
-        this.mobileInputEl.maxLength = maxLength || 256;
-        
-        // Position and style the input
-        this.mobileInputEl.style.display = 'block';
-        
-        // Apply custom styles if provided
-        if (style) {
-            Object.assign(this.mobileInputEl.style, style);
-        }
-        
-        // Focus the input to show keyboard
-        setTimeout(() => {
-            this.mobileInputEl.focus();
-            
-            // Start update interval to sync input with game
-            if (this.keyboardUpdateInterval) {
-                clearInterval(this.keyboardUpdateInterval);
-            }
-            
-            this.keyboardUpdateInterval = setInterval(() => {
-                this.mobileKeyboardUpdate();
-            }, 125);
-        }, 100);
-    }
-
-    mobileKeyboardUpdate() {
-        if (!this.mobileInputEl) return;
-        
-        // If no visible input, close the keyboard
-        if (this.mobileInputEl.style.display === 'none') {
-            clearInterval(this.keyboardUpdateInterval);
-            return;
-        }
-        
-        // Get the current input text
-        const inputValue = this.mobileInputEl.value || '';
-        
-        // Find the panel with focus
-        let activePanel = null;
-        for (const panel of Object.values(this.panels || {})) {
-            if (panel.focusControlIndex !== -1) {
-                activePanel = panel;
-                break;
-            }
-        }
-        
-        // Update the appropriate input
-        if (activePanel) {
-            // Update the panel text
-            activePanel.updateText(activePanel.focusControlIndex, inputValue);
-            
-            // Force redraw if needed
-            if (this.gameGraphics) {
-                this.gameGraphics.drawGame();
-            }
-        } else if (this.loginScreen === 1 || this.loginScreen === 2) {
-            // On login screen
-            if (this.loginUserInput === '' || this.loginUserInput === null) {
-                this.loginUserInput = inputValue;
-            } else {
-                this.loginPassInput = inputValue;
-            }
-            
-            // Force redraw of login screen
-            this.drawLoginScreens();
-        } else {
-            // In-game chat
-            this.inputTextCurrent = inputValue;
-        }
-    }
-
-    closeKeyboard() {
-        if (this.keyboardUpdateInterval) {
-            clearInterval(this.keyboardUpdateInterval);
-        }
-        
-        if (this.mobileInput) {
-            this.mobileInput.style.display = 'none';
-            this.mobileInput.blur();
-        }
-        
-        if (this.mobilePassword) {
-            this.mobilePassword.style.display = 'none';
-            this.mobilePassword.blur();
-        }
-        
-        this.mobileInputEl = null;
-    }
-
-    createMobileInputs() {
-        // Create text input if doesn't exist
-        if (!this.mobileInput) {
-            this.mobileInput = document.createElement('input');
-            this.mobileInput.type = 'text';
-            this.mobileInput.style.position = 'absolute';
-            this.mobileInput.style.display = 'none';
-            this.mobileInput.autocomplete = 'off';
-            this.mobileInput.autocorrect = 'off';
-            this.mobileInput.spellcheck = false;
-            this.mobileInput.autocapitalize = 'off';
-            Object.assign(this.mobileInput.style, {
-                backgroundColor: 'rgba(0,0,0,0.7)',
-                color: '#fff',
-                border: '1px solid #444',
-                borderRadius: '4px',
-                padding: '8px',
-                fontSize: '16px',
-                zIndex: '1000'
-            });
-            document.body.appendChild(this.mobileInput);
-            
-            // Handle input submission
-            this.mobileInput.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    this.closeKeyboard();
-                    
-                    // Programmatically press Enter in the game
-                    const enterEvent = new KeyboardEvent('keydown', {
-                        bubbles: true,
-                        cancelable: true,
-                        key: 'Enter',
-                        code: 'Enter',
-                        keyCode: 13
-                    });
-                    document.dispatchEvent(enterEvent);
-                }
-            });
-        }
-        
-        // Create password input if doesn't exist
-        if (!this.mobilePassword) {
-            this.mobilePassword = document.createElement('input');
-            this.mobilePassword.type = 'password';
-            this.mobilePassword.style.position = 'absolute';
-            this.mobilePassword.style.display = 'none';
-            this.mobilePassword.autocomplete = 'off';
-            Object.assign(this.mobilePassword.style, {
-                backgroundColor: 'rgba(0,0,0,0.7)',
-                color: '#fff',
-                border: '1px solid #444',
-                borderRadius: '4px',
-                padding: '8px',
-                fontSize: '16px',
-                zIndex: '1000'
-            });
-            document.body.appendChild(this.mobilePassword);
-            
-            // Handle password submission
-            this.mobilePassword.addEventListener('keydown', (e) => {
-                if (e.key === 'Enter') {
-                    this.closeKeyboard();
-                    
-                    // Programmatically press Enter in the game
-                    const enterEvent = new KeyboardEvent('keydown', {
-                        bubbles: true,
-                        cancelable: true,
-                        key: 'Enter',
-                        code: 'Enter',
-                        keyCode: 13
-                    });
-                    document.dispatchEvent(enterEvent);
-                }
-            });
-        }
-    }
-
-    async startApplication(width, height, title) {
-        // Create mobile inputs when starting the application
-        if (this.options.mobile) {
-            this.createMobileInputs();
-        }
-        
-        // Continue with original startApplication code
-        await super.startApplication(width, height, title);
-    }
 }
 
 module.exports = mudclient;
-
 },{"./game-buffer":253,"./game-character":254,"./game-connection":255,"./game-data":256,"./game-model":257,"./lib/graphics/color":259,"./lib/graphics/font":260,"./lib/keycodes":262,"./opcodes/client":267,"./packet-handlers":274,"./panel":298,"./scene":301,"./stream-audio-player":302,"./surface":303,"./ui":309,"./utility":332,"./version":333,"./word-filter":334,"./world":335,"long":165}],267:[function(require,module,exports){
 module.exports={
     "APPEARANCE": 235,
@@ -52763,18 +52550,23 @@ class Panel {
             this.mouseMetaButtonHeld = 0;
         }
 
-        if (this.surface.game.options.mobile && isDown === 1) {
+        // TODO i don't think we need this? what was controlType 15?
+        /*if (lastButton === 1 || this.mouseMetaButtonHeld > 20) {
             for (let i = 0; i < this.controlCount; i++) {
-                if (this.controlType[i] === controlTypes.TEXT_INPUT &&
-                    this.mouseX >= this.controlX[i] && 
+                if (
+                    this.controlShown[i] &&
+                    this.controlType[i] === 15 &&
+                    this.mouseX >= this.controlX[i] &&
+                    this.mouseY >= this.controlY[i] &&
                     this.mouseX <= this.controlX[i] + this.controlWidth[i] &&
-                    this.mouseY >= this.controlY[i] - 12 && 
-                    this.mouseY <= this.controlY[i] + 4) {
-                    
-                    this.setMobileFocus(i);
+                    this.mouseY <= this.controlY[i] + this.controlHeight[i]
+                ) {
+                    this.controlClicked[i] = true;
                 }
             }
-        }
+
+            this.mouseMetaButtonHeld -= 5;
+        }*/
     }
 
     isClicked(control) {
@@ -52799,9 +52591,7 @@ class Panel {
             const inputLen = this.controlText[this.focusControlIndex].length;
 
             if (key === 8 && inputLen > 0) {
-                this.controlText[
-                    this.focusControlIndex
-                ] = this.controlText[
+                this.controlText[this.focusControlIndex] = this.controlText[
                     this.focusControlIndex
                 ].slice(0, inputLen - 1);
             }
@@ -54033,7 +53823,6 @@ Panel.blueMod = 176;
 Panel.textListEntryHeightMod = 0;
 
 module.exports = Panel;
-
 },{"./surface":303}],299:[function(require,module,exports){
 class Polygon {
     constructor() {

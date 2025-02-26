@@ -11,7 +11,7 @@ const version = require('./version');
 const sleep = require('sleep-promise');
 
 const CHAR_MAP =
-    'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!"\xa3$%^&' +
+    'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!"\243$%^&' +
     "*()-_=+[{]};:'@#~,<.>/?\\| ";
 
 const FONTS = [
@@ -72,7 +72,7 @@ class GameShell {
             accountManagement: true,
             fpsCounter: false,
             retryLoginOnDisconnect: true,
-            mobile: false  // Default to desktop mode
+            mobile: false
         };
 
         this.middleButtonDown = false;
@@ -134,11 +134,7 @@ class GameShell {
         this.appletWidth = width;
         this.appletHeight = height;
 
-        // Detect if we're actually on a mobile device
-        const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-        
-        // Setup touch handlers for mobile devices, mouse handlers for desktop
-        if (this.options.mobile && isMobileDevice) {
+        if (this.options.mobile) {
             this._canvas.addEventListener('touchstart', (e) => {
                 // Prevent default behavior for better control but allow scrolling
                 if (e.touches.length === 1) {
@@ -246,7 +242,6 @@ class GameShell {
                 this.mouseReleased(e);
             });
         } else {
-            // Desktop mouse handlers
             this._canvas.addEventListener(
                 'mousedown',
                 this.mousePressed.bind(this)
@@ -319,36 +314,25 @@ class GameShell {
     }
 
     openKeyboard(type = 'text', text, maxLength, style) {
-        console.log('Opening mobile keyboard', type, text);
-        
-        // Choose the right input element based on type
-        this.mobileInputEl = (type === 'password') ? this.mobilePassword : this.mobileInput;
-        
-        // Set up the input
-        this.mobileInputEl.value = text || '';
-        this.mobileInputEl.maxLength = maxLength || 256;
-        
-        // Position and style the input
+        this.mobileInputCaret = -1;
+        this.lastMobileInput = text;
+        this.toggleKeyboard = true;
+
+        this.mobileInputEl =
+            type === 'password' ? this.mobilePassword : this.mobileInput;
+
+        this.mobileInputEl.value = text;
+        this.mobileInputEl.maxLength = maxLength;
+
         this.mobileInputEl.style.display = 'block';
-        
-        // Apply custom styles if provided
-        if (style) {
-            Object.assign(this.mobileInputEl.style, style);
+
+        for (const [name, value] of Object.entries(style)) {
+            this.mobileInputEl.style[name] = value;
         }
-        
-        // Focus the input to show keyboard
-        setTimeout(() => {
-            this.mobileInputEl.focus();
-            
-            // Start update interval to sync input with game
-            if (this.keyboardUpdateInterval) {
-                clearInterval(this.keyboardUpdateInterval);
-            }
-            
-            this.keyboardUpdateInterval = setInterval(() => {
-                this.mobileKeyboardUpdate();
-            }, 125);
-        }, 100);
+
+        this.keyboardUpdateInterval = setInterval(() => {
+            this.mobileKeyboardUpdate();
+        }, 125);
     }
 
     mobileKeyDown(e) {
@@ -359,32 +343,22 @@ class GameShell {
     }
 
     mobileKeyboardUpdate() {
-        if (!this.mobileInputEl) return;
-        
+        this.mobileInputCaret = this.mobileInputEl.selectionStart;
+
         const newInput = this.mobileInputEl.value;
-        if (newInput === this.lastMobileInput) return;
-        
-        console.log('Input changed:', newInput);
-        
-        // In loginScreen mode, update panel text directly
-        if (this.loginScreen === 1 || this.loginScreen === 2) {
-            // Let the panel handle it
-        } else {
-            // For in-game chat input
-            // Clear previous input
-            for (let i = 0; i < this.lastMobileInput.length; i++) {
-                this.keyPressed({ keyCode: 8 }); // Backspace
-            }
-            
-            // Type new input
-            for (let i = 0; i < newInput.length; i++) {
-                this.keyPressed({ 
-                    key: newInput[i],
-                    keyCode: newInput.charCodeAt(i)
-                });
-            }
+
+        if (newInput === this.lastMobileInput) {
+            return;
         }
-        
+
+        for (let i = 0; i < this.lastMobileInput.length; i += 1) {
+            this.keyPressed({ keyCode: keycodes.BACKSPACE });
+        }
+
+        for (let i = 0; i < newInput.length; i += 1) {
+            this.keyPressed({ key: newInput[i] });
+        }
+
         this.lastMobileInput = newInput;
     }
 

@@ -7,28 +7,27 @@ if (typeof window === 'undefined') {
 // Remove Farcaster Frame support code
 
 (async () => {
-    // Create a wrapper container for the game
+    // Create a wrapper container that takes up the full viewport
     const wrapperContainer = document.createElement('div');
     wrapperContainer.style.display = 'flex';
     wrapperContainer.style.justifyContent = 'center';
     wrapperContainer.style.alignItems = 'center';
-    wrapperContainer.style.height = '100vh';
     wrapperContainer.style.width = '100%';
+    wrapperContainer.style.height = '100vh';
+    wrapperContainer.style.margin = '0';
+    wrapperContainer.style.padding = '0';
+    wrapperContainer.style.overflow = 'hidden';
     
     // Create the game container
     const mcContainer = document.createElement('div');
+    // We don't set dimensions here - let the game set them
     
     // Add the game container to the wrapper
     wrapperContainer.appendChild(mcContainer);
     
     const args = window.location.hash.slice(1).split(',');
     const mc = new mudclient(mcContainer);
-    
-    // Detect if we're on mobile
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 
-    // Make client globally accessible
-    window.mc = mc;
     window.mcOptions = mc.options;
 
     Object.assign(mc.options, {
@@ -37,16 +36,21 @@ if (typeof window === 'undefined') {
         resetCompass: true,
         zoomCamera: true,
         accountManagement: true,
-        mobile: isMobile  // Only enable mobile mode on actual mobile devices
+        mobile: false
     });
 
     mc.members = args[0] === 'members';
+    
+    // Use the provided server address or default to the Railway server
     mc.server = args[1] ? args[1] : 'rsc-server-production.up.railway.app';
+    
+    // Don't specify a port for Railway domains
     mc.port = args[2] && !isNaN(+args[2]) ? +args[2] : 
         (mc.server.includes('railway.app') ? null : 43595);
+
     mc.threadSleep = 10;
-    
-    // Style the body
+
+    // Style the body to ensure full height and remove margins
     document.body.style.margin = '0';
     document.body.style.padding = '0';
     document.body.style.height = '100vh';
