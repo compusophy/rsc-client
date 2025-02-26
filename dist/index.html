@@ -25,20 +25,35 @@
             body {
                 background-color: #000;
                 margin: 0;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+            }
+            
+            #gameContainer {
+                width: 100%;
+                display: flex;
+                justify-content: center;
             }
             
             #keyboardButton {
-                position: fixed;
-                bottom: 10px;
-                right: 10px;
-                background-color: rgba(0, 0, 0, 0.7);
+                margin: 10px auto;
+                background-color: #333;
                 color: white;
-                border: 1px solid rgba(255, 255, 255, 0.5);
+                border: 1px solid #666;
                 border-radius: 5px;
-                padding: 8px 12px;
+                padding: 10px 20px;
                 font-size: 16px;
-                z-index: 1000;
-                display: none; /* Hide by default, show only on mobile */
+                cursor: pointer;
+            }
+            
+            #keyboardInput {
+                position: absolute;
+                left: -1000px;
+                top: -1000px;
+                width: 100px;
+                height: 30px;
+                opacity: 0.01; /* Not completely invisible to keep focus */
             }
         </style>
     </head>
@@ -47,39 +62,38 @@
         <script>
             document.addEventListener('DOMContentLoaded', function() {
                 frame.sdk.actions.ready();
-                
-                // Check if this is a mobile device
-                const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-                if (isMobile) {
-                    document.getElementById('keyboardButton').style.display = 'block';
-                }
             });
         </script>
         
-        <!-- Add keyboard button -->
-        <button id="keyboardButton">⌨️ Keyboard</button>
+        <div id="gameContainer">
+            <!-- The game will be inserted here -->
+        </div>
+        
+        <button id="keyboardButton">Show Keyboard</button>
+        <input type="text" id="keyboardInput" autocomplete="off" />
         
         <script src="./index.bundle.js"></script>
         
         <script>
             // Add keyboard button functionality
             document.getElementById('keyboardButton').addEventListener('click', function() {
-                // Create a hidden input field, focus it, then remove it
-                const tempInput = document.createElement('input');
-                tempInput.style.position = 'absolute';
-                tempInput.style.opacity = '0';
-                tempInput.style.height = '0';
-                tempInput.style.width = '0';
+                const input = document.getElementById('keyboardInput');
+                input.focus();
                 
-                document.body.appendChild(tempInput);
-                tempInput.focus();
-                
-                // Remove it after a short delay
-                setTimeout(function() {
-                    try {
-                        document.body.removeChild(tempInput);
-                    } catch(e) {}
+                // Keep the input focused in case it loses focus
+                const keepFocused = setInterval(function() {
+                    input.focus();
                 }, 100);
+                
+                // Stop trying to keep focus after 5 seconds
+                setTimeout(function() {
+                    clearInterval(keepFocused);
+                }, 5000);
+            });
+            
+            // Prevent the keyboard input from interfering with game keys
+            document.getElementById('keyboardInput').addEventListener('keydown', function(e) {
+                e.stopPropagation();
             });
         </script>
     </body>
