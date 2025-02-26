@@ -72,7 +72,7 @@ class GameShell {
             accountManagement: true,
             fpsCounter: false,
             retryLoginOnDisconnect: true,
-            mobile: false
+            mobile: true
         };
 
         this.middleButtonDown = false;
@@ -351,12 +351,19 @@ class GameShell {
             return;
         }
 
+        console.log('Input changed:', newInput);  // Debug logging
+
+        // Clear previous input
         for (let i = 0; i < this.lastMobileInput.length; i += 1) {
             this.keyPressed({ keyCode: keycodes.BACKSPACE });
         }
 
+        // Send new input character by character
         for (let i = 0; i < newInput.length; i += 1) {
-            this.keyPressed({ key: newInput[i] });
+            this.keyPressed({ 
+                key: newInput[i],
+                keyCode: newInput.charCodeAt(i)
+            });
         }
 
         this.lastMobileInput = newInput;

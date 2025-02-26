@@ -12,46 +12,33 @@ if (typeof window === 'undefined') {
     wrapperContainer.style.display = 'flex';
     wrapperContainer.style.justifyContent = 'center';
     wrapperContainer.style.alignItems = 'center';
-    wrapperContainer.style.width = '100%';
     wrapperContainer.style.height = '100vh';
-    wrapperContainer.style.margin = '0';
-    wrapperContainer.style.padding = '0';
-    wrapperContainer.style.overflow = 'hidden';
+    wrapperContainer.style.width = '100%';
     
-    // Create the game container
-    const mcContainer = document.createElement('div');
+    // Create game container with proper aspect ratio
+    const gameContainer = document.createElement('div');
+    gameContainer.style.position = 'relative';
+    gameContainer.style.width = '100%';
+    gameContainer.style.maxWidth = '512px';
+    gameContainer.style.aspectRatio = '512/346';
     
-    // Add the game container to the wrapper
-    wrapperContainer.appendChild(mcContainer);
+    wrapperContainer.appendChild(gameContainer);
     
-    const args = window.location.hash.slice(1).split(',');
-    const mc = new mudclient(mcContainer);
+    // Detect if we're on mobile
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     
-    // Make client globally accessible
-    window.mc = mc;
-
-    window.mcOptions = mc.options;
-
-    Object.assign(mc.options, {
+    // Initialize the game client
+    const mc = window.mc = new mudclient(gameContainer);
+    
+    mc.setOptions({
         middleClickCamera: true,
         mouseWheel: true,
         resetCompass: true,
         zoomCamera: true,
         accountManagement: true,
-        mobile: true  // Enable mobile mode for touch support
+        mobile: isMobile  // Auto-detect mobile devices
     });
-
-    mc.members = args[0] === 'members';
     
-    // Use the provided server address or default to the Railway server
-    mc.server = args[1] ? args[1] : 'rsc-server-production.up.railway.app';
-    
-    // Don't specify a port for Railway domains
-    mc.port = args[2] && !isNaN(+args[2]) ? +args[2] : 
-        (mc.server.includes('railway.app') ? null : 43595);
-
-    mc.threadSleep = 10;
-
     // Style the body
     document.body.style.margin = '0';
     document.body.style.padding = '0';
