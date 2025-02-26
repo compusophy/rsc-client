@@ -26,8 +26,9 @@ if (typeof window === 'undefined') {
     // Use the provided server address or default to the Railway server
     mc.server = args[1] ? args[1] : 'rsc-server-production.up.railway.app';
     
-    // Use the provided port or default to the WebSocket port
-    mc.port = args[2] && !isNaN(+args[2]) ? +args[2] : 43595;
+    // Don't specify a port for Railway domains
+    mc.port = args[2] && !isNaN(+args[2]) ? +args[2] : 
+        (mc.server.includes('railway.app') ? null : 43595);
 
     mc.threadSleep = 10;
 
@@ -41347,7 +41348,10 @@ class GameConnection extends GameShell {
 
         // Use the server address from window if available, otherwise use default
         this.server = (typeof window !== 'undefined' && window.serverAddress) || 'rsc-server-production.up.railway.app';
-        this.port = (typeof window !== 'undefined' && window.serverPort) || 43595;
+
+        // Don't specify a port for Railway domains
+        this.port = (typeof window !== 'undefined' && window.serverPort) || 
+            (this.server.includes('railway.app') ? null : 43595);
 
         this.username = '';
         this.password = '';
@@ -45182,11 +45186,13 @@ class Socket {
     connect() {
         return new Promise((resolve, reject) => {
             if (typeof this.host === 'string') {
-                // Always use secure WebSockets
-                this.client = new WebSocket(
-                    `wss://${this.host}:${this.port}`,
-                    'binary'
-                );
+                // For Railway deployment, add /ws path and don't specify a port
+                const isRailwayDomain = this.host.includes('railway.app');
+                const url = isRailwayDomain 
+                    ? `ws://${this.host}/ws` 
+                    : `ws://${this.host}:${this.port}`;
+                
+                this.client = new WebSocket(url, 'binary');
             } else if (this.host.constructor.name === 'Worker') {
                 this.client = new WorkerSocket(this.host);
             } else if (this.host.constructor.name === 'Peer') {
