@@ -4678,33 +4678,34 @@ class mudclient extends GameConnection {
         
         console.log('Opening mobile keyboard', type, text);
         
-        // This method should show the appropriate input element
-        this.toggleKeyboard = true;
-        
         // Choose the right input element based on type
-        this.mobileInputEl = 
-            type === 'password' ? this.mobilePassword : this.mobileInput;
+        this.mobileInputEl = (type === 'password') ? this.mobilePassword : this.mobileInput;
         
         // Set up the input
         this.mobileInputEl.value = text || '';
-        this.mobileInputEl.maxLength = maxLength;
+        this.mobileInputEl.maxLength = maxLength || 256;
         
         // Position and style the input
         this.mobileInputEl.style.display = 'block';
         
-        for (const [name, value] of Object.entries(style)) {
-            this.mobileInputEl.style[name] = value;
+        // Apply custom styles if provided
+        if (style) {
+            Object.assign(this.mobileInputEl.style, style);
         }
         
-        // Focus and show keyboard
+        // Focus the input to show keyboard
         setTimeout(() => {
             this.mobileInputEl.focus();
+            
+            // Start update interval to sync input with game
+            if (this.keyboardUpdateInterval) {
+                clearInterval(this.keyboardUpdateInterval);
+            }
+            
+            this.keyboardUpdateInterval = setInterval(() => {
+                this.mobileKeyboardUpdate();
+            }, 125);
         }, 100);
-        
-        // Set up the update interval for syncing input changes
-        this.keyboardUpdateInterval = setInterval(() => {
-            this.mobileKeyboardUpdate();
-        }, 125);
     }
 
     mobileKeyboardUpdate() {
@@ -4730,7 +4731,13 @@ class mudclient extends GameConnection {
         
         // Update the appropriate input
         if (activePanel) {
-            activePanel.controlText[activePanel.focusControlIndex] = inputValue;
+            // Update the panel text
+            activePanel.updateText(activePanel.focusControlIndex, inputValue);
+            
+            // Force redraw if needed
+            if (this.gameGraphics) {
+                this.gameGraphics.drawGame();
+            }
         } else if (this.loginScreen === 1 || this.loginScreen === 2) {
             // On login screen
             if (this.loginUserInput === '' || this.loginUserInput === null) {
@@ -4738,6 +4745,9 @@ class mudclient extends GameConnection {
             } else {
                 this.loginPassInput = inputValue;
             }
+            
+            // Force redraw of login screen
+            this.drawLoginScreens();
         } else {
             // In-game chat
             this.inputTextCurrent = inputValue;
@@ -4749,15 +4759,17 @@ class mudclient extends GameConnection {
             clearInterval(this.keyboardUpdateInterval);
         }
         
-        if (this.mobileInputEl) {
-            this.mobileInputEl.style.display = 'none';
-            this.mobileInputEl.blur();
+        if (this.mobileInput) {
+            this.mobileInput.style.display = 'none';
+            this.mobileInput.blur();
         }
         
         if (this.mobilePassword) {
             this.mobilePassword.style.display = 'none';
             this.mobilePassword.blur();
         }
+        
+        this.mobileInputEl = null;
     }
 
     createMobileInputs() {
@@ -4768,13 +4780,17 @@ class mudclient extends GameConnection {
             this.mobileInput.style.position = 'absolute';
             this.mobileInput.style.display = 'none';
             this.mobileInput.autocomplete = 'off';
+            this.mobileInput.autocorrect = 'off';
+            this.mobileInput.spellcheck = false;
+            this.mobileInput.autocapitalize = 'off';
             Object.assign(this.mobileInput.style, {
                 backgroundColor: 'rgba(0,0,0,0.7)',
                 color: '#fff',
                 border: '1px solid #444',
                 borderRadius: '4px',
                 padding: '8px',
-                fontSize: '16px'
+                fontSize: '16px',
+                zIndex: '1000'
             });
             document.body.appendChild(this.mobileInput);
             
@@ -4783,13 +4799,15 @@ class mudclient extends GameConnection {
                 if (e.key === 'Enter') {
                     this.closeKeyboard();
                     
-                    // Find the panel with focus and click it
-                    for (const panel of Object.values(this.panels || {})) {
-                        if (panel.focusControlIndex !== -1) {
-                            panel.controlClicked[panel.focusControlIndex] = true;
-                            break;
-                        }
-                    }
+                    // Programmatically press Enter in the game
+                    const enterEvent = new KeyboardEvent('keydown', {
+                        bubbles: true,
+                        cancelable: true,
+                        key: 'Enter',
+                        code: 'Enter',
+                        keyCode: 13
+                    });
+                    document.dispatchEvent(enterEvent);
                 }
             });
         }
@@ -4807,7 +4825,8 @@ class mudclient extends GameConnection {
                 border: '1px solid #444',
                 borderRadius: '4px',
                 padding: '8px',
-                fontSize: '16px'
+                fontSize: '16px',
+                zIndex: '1000'
             });
             document.body.appendChild(this.mobilePassword);
             
@@ -4816,13 +4835,15 @@ class mudclient extends GameConnection {
                 if (e.key === 'Enter') {
                     this.closeKeyboard();
                     
-                    // Find the panel with focus and click it
-                    for (const panel of Object.values(this.panels || {})) {
-                        if (panel.focusControlIndex !== -1) {
-                            panel.controlClicked[panel.focusControlIndex] = true;
-                            break;
-                        }
-                    }
+                    // Programmatically press Enter in the game
+                    const enterEvent = new KeyboardEvent('keydown', {
+                        bubbles: true,
+                        cancelable: true,
+                        key: 'Enter',
+                        code: 'Enter',
+                        keyCode: 13
+                    });
+                    document.dispatchEvent(enterEvent);
                 }
             });
         }
