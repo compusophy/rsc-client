@@ -45187,10 +45187,13 @@ class Socket {
         return new Promise((resolve, reject) => {
             if (typeof this.host === 'string') {
                 // For Railway deployment, add /ws path and don't specify a port
+                // Use secure WebSockets (wss://) when the page is loaded over HTTPS
                 const isRailwayDomain = this.host.includes('railway.app');
+                const protocol = window.location.protocol === 'https:' ? 'wss://' : 'ws://';
+                
                 const url = isRailwayDomain 
-                    ? `ws://${this.host}/ws` 
-                    : `ws://${this.host}:${this.port}`;
+                    ? `${protocol}${this.host}/ws` 
+                    : `${protocol}${this.host}:${this.port}`;
                 
                 this.client = new WebSocket(url, 'binary');
             } else if (this.host.constructor.name === 'Worker') {
