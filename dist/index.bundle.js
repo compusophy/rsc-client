@@ -8,26 +8,20 @@ if (typeof window === 'undefined') {
 // Remove Farcaster Frame support code
 
 (async () => {
-    // Create a wrapper container that takes up the full viewport
-    const wrapperContainer = document.createElement('div');
-    wrapperContainer.style.display = 'flex';
-    wrapperContainer.style.justifyContent = 'center';
-    wrapperContainer.style.alignItems = 'center';
-    wrapperContainer.style.width = '100%';
-    wrapperContainer.style.height = '100vh';
-    wrapperContainer.style.margin = '0';
-    wrapperContainer.style.padding = '0';
-    wrapperContainer.style.overflow = 'hidden';
+    // Get the existing game container from our HTML
+    const gameContainer = document.getElementById('gameContainer');
     
-    // Create the game container
+    // Create the game container for the client
     const mcContainer = document.createElement('div');
-    // We don't set dimensions here - let the game set them
     
-    // Add the game container to the wrapper
-    wrapperContainer.appendChild(mcContainer);
+    // Add the game container to our existing container
+    gameContainer.appendChild(mcContainer);
     
     const args = window.location.hash.slice(1).split(',');
     const mc = new mudclient(mcContainer);
+    
+    // Make client globally available
+    window.mc = mc;
 
     window.mcOptions = mc.options;
 
@@ -37,7 +31,7 @@ if (typeof window === 'undefined') {
         resetCompass: true,
         zoomCamera: true,
         accountManagement: true,
-        mobile: false
+        mobile: true // Always set mobile to true for better touch support
     });
 
     mc.members = args[0] === 'members';
@@ -58,7 +52,7 @@ if (typeof window === 'undefined') {
     document.body.style.overflow = 'hidden';
     document.body.style.backgroundColor = '#000';
     
-    document.body.appendChild(wrapperContainer);
+    document.body.appendChild(gameContainer);
 
     await mc.startApplication(512, 346, 'Runescape by Andrew Gower');
 })();

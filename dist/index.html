@@ -37,23 +37,17 @@
             }
             
             #keyboardButton {
-                margin: 10px auto;
-                background-color: #333;
+                position: fixed;
+                bottom: 10px;
+                right: 10px;
+                background-color: rgba(0, 0, 0, 0.6);
                 color: white;
-                border: 1px solid #666;
+                border: 1px solid rgba(255, 255, 255, 0.5);
                 border-radius: 5px;
-                padding: 10px 20px;
-                font-size: 16px;
+                padding: 8px 12px;
+                font-size: 14px;
+                z-index: 1000;
                 cursor: pointer;
-            }
-            
-            #keyboardInput {
-                position: absolute;
-                left: -1000px;
-                top: -1000px;
-                width: 100px;
-                height: 30px;
-                opacity: 0.01; /* Not completely invisible to keep focus */
             }
         </style>
     </head>
@@ -69,31 +63,47 @@
             <!-- The game will be inserted here -->
         </div>
         
-        <button id="keyboardButton">Show Keyboard</button>
-        <input type="text" id="keyboardInput" autocomplete="off" />
+        <button id="keyboardButton">⌨️</button>
         
         <script src="./index.bundle.js"></script>
         
         <script>
-            // Add keyboard button functionality
+            // Simplified keyboard handling
             document.getElementById('keyboardButton').addEventListener('click', function() {
-                const input = document.getElementById('keyboardInput');
-                input.focus();
-                
-                // Keep the input focused in case it loses focus
-                const keepFocused = setInterval(function() {
-                    input.focus();
-                }, 100);
-                
-                // Stop trying to keep focus after 5 seconds
-                setTimeout(function() {
-                    clearInterval(keepFocused);
-                }, 5000);
-            });
-            
-            // Prevent the keyboard input from interfering with game keys
-            document.getElementById('keyboardInput').addEventListener('keydown', function(e) {
-                e.stopPropagation();
+                // First try username/password fields for login
+                const usernameInput = prompt("Enter username:");
+                if (usernameInput !== null && usernameInput !== '') {
+                    // Set username in login UI
+                    if (window.mc) {
+                        window.mc.loginUserInput = usernameInput;
+                        
+                        // Now prompt for password
+                        const passwordInput = prompt("Enter password:");
+                        if (passwordInput !== null) {
+                            window.mc.loginPassInput = passwordInput;
+                            
+                            // Simulate clicking the login button by setting flag
+                            window.mc.loginButtonClicked = true;
+                        }
+                    } else {
+                        // For general text input, set as chat
+                        if (window.mc) {
+                            window.mc.inputTextCurrent = usernameInput;
+                            window.mc.inputTextFinal = usernameInput;
+                            
+                            // Simulate Enter key press to submit text
+                            const event = new KeyboardEvent('keydown', {
+                                key: 'Enter',
+                                keyCode: 13,
+                                which: 13,
+                                bubbles: true
+                            });
+                            document.dispatchEvent(event);
+                        } else {
+                            alert("Game client not found. Try refreshing the page.");
+                        }
+                    }
+                }
             });
         </script>
     </body>
