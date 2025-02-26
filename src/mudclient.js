@@ -4670,6 +4670,42 @@ class mudclient extends GameConnection {
 
         return gameModel;
     }
+
+    openKeyboard(type = 'text', text, maxLength, style) {
+        if (!this.options.mobile) {
+            return;
+        }
+        
+        console.log('Opening mobile keyboard', type, text);
+        
+        // This method should show the appropriate input element
+        this.toggleKeyboard = true;
+        
+        // Choose the right input element based on type
+        this.mobileInputEl = 
+            type === 'password' ? this.mobilePassword : this.mobileInput;
+        
+        // Set up the input
+        this.mobileInputEl.value = text || '';
+        this.mobileInputEl.maxLength = maxLength;
+        
+        // Position and style the input
+        this.mobileInputEl.style.display = 'block';
+        
+        for (const [name, value] of Object.entries(style)) {
+            this.mobileInputEl.style[name] = value;
+        }
+        
+        // Focus and show keyboard
+        setTimeout(() => {
+            this.mobileInputEl.focus();
+        }, 100);
+        
+        // Set up the update interval for syncing input changes
+        this.keyboardUpdateInterval = setInterval(() => {
+            this.mobileKeyboardUpdate();
+        }, 125);
+    }
 }
 
 module.exports = mudclient;

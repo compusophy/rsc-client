@@ -168,7 +168,9 @@ class Panel {
             const inputLen = this.controlText[this.focusControlIndex].length;
 
             if (key === 8 && inputLen > 0) {
-                this.controlText[this.focusControlIndex] = this.controlText[
+                this.controlText[
+                    this.focusControlIndex
+                ] = this.controlText[
                     this.focusControlIndex
                 ].slice(0, inputLen - 1);
             }
