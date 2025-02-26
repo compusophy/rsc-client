@@ -24,13 +24,13 @@ if (typeof window === 'undefined') {
     const args = window.location.hash.slice(1).split(',');
     const mc = new mudclient(mcContainer);
     
+    // Detect if we're on mobile
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
     // Make client globally accessible
     window.mc = mc;
     window.mcOptions = mc.options;
 
-    // Detect mobile devices
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    
     Object.assign(mc.options, {
         middleClickCamera: true,
         mouseWheel: true,

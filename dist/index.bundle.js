@@ -25,13 +25,13 @@ if (typeof window === 'undefined') {
     const args = window.location.hash.slice(1).split(',');
     const mc = new mudclient(mcContainer);
     
+    // Detect if we're on mobile
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
     // Make client globally accessible
     window.mc = mc;
     window.mcOptions = mc.options;
 
-    // Detect mobile devices
-    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-    
     Object.assign(mc.options, {
         middleClickCamera: true,
         mouseWheel: true,
@@ -44296,25 +44296,36 @@ class GameShell {
     }
 
     openKeyboard(type = 'text', text, maxLength, style) {
-        this.mobileInputCaret = -1;
-        this.lastMobileInput = text;
-        this.toggleKeyboard = true;
-
-        this.mobileInputEl =
-            type === 'password' ? this.mobilePassword : this.mobileInput;
-
-        this.mobileInputEl.value = text;
-        this.mobileInputEl.maxLength = maxLength;
-
+        console.log('Opening mobile keyboard', type, text);
+        
+        // Choose the right input element based on type
+        this.mobileInputEl = (type === 'password') ? this.mobilePassword : this.mobileInput;
+        
+        // Set up the input
+        this.mobileInputEl.value = text || '';
+        this.mobileInputEl.maxLength = maxLength || 256;
+        
+        // Position and style the input
         this.mobileInputEl.style.display = 'block';
-
-        for (const [name, value] of Object.entries(style)) {
-            this.mobileInputEl.style[name] = value;
+        
+        // Apply custom styles if provided
+        if (style) {
+            Object.assign(this.mobileInputEl.style, style);
         }
-
-        this.keyboardUpdateInterval = setInterval(() => {
-            this.mobileKeyboardUpdate();
-        }, 125);
+        
+        // Focus the input to show keyboard
+        setTimeout(() => {
+            this.mobileInputEl.focus();
+            
+            // Start update interval to sync input with game
+            if (this.keyboardUpdateInterval) {
+                clearInterval(this.keyboardUpdateInterval);
+            }
+            
+            this.keyboardUpdateInterval = setInterval(() => {
+                this.mobileKeyboardUpdate();
+            }, 125);
+        }, 100);
     }
 
     mobileKeyDown(e) {
@@ -44327,33 +44338,23 @@ class GameShell {
     mobileKeyboardUpdate() {
         if (!this.mobileInputEl) return;
         
-        this.mobileInputCaret = this.mobileInputEl.selectionStart;
         const newInput = this.mobileInputEl.value;
-        
         if (newInput === this.lastMobileInput) return;
         
-        console.log('Panel input changed:', newInput);
+        console.log('Input changed:', newInput);
         
-        // Update text in panel control
-        if (this.loginScreen === 1) {
-            // Register panel
-            const controlId = this.panelLoginNewUser.focusControlId;
-            if (controlId !== undefined) {
-                this.panelLoginNewUser.updateText(controlId, newInput);
-            }
-        } else if (this.loginScreen === 2) {
-            // Login panel
-            const controlId = this.panelLoginExistingUser.focusControlId;
-            if (controlId !== undefined) {
-                this.panelLoginExistingUser.updateText(controlId, newInput);
-            }
+        // In loginScreen mode, update panel text directly
+        if (this.loginScreen === 1 || this.loginScreen === 2) {
+            // Let the panel handle it
         } else {
-            // Game chat input
-            for (let i = 0; i < this.lastMobileInput.length; i += 1) {
-                this.keyPressed({ keyCode: keycodes.BACKSPACE });
+            // For in-game chat input
+            // Clear previous input
+            for (let i = 0; i < this.lastMobileInput.length; i++) {
+                this.keyPressed({ keyCode: 8 }); // Backspace
             }
             
-            for (let i = 0; i < newInput.length; i += 1) {
+            // Type new input
+            for (let i = 0; i < newInput.length; i++) {
                 this.keyPressed({ 
                     key: newInput[i],
                     keyCode: newInput.charCodeAt(i)
@@ -53989,47 +53990,38 @@ class Panel {
         return this.controlListEntryMouseOver[control];
     }
 
-    setMobileFocus(controlId) {
-        if (!this.surface.game.options.mobile) return;
-        
-        // Find the text input control
-        const control = this.controls[controlId];
-        if (!control || control.type !== Panel.CONTROL_TEXT_INPUT) return;
-        
-        // Get text input position and size
-        const x = control.x;
-        const y = control.y;
-        const width = control.width;
-        const height = control.height || 12;
-        
-        // Calculate position relative to canvas
-        const canvasRect = this.surface.gameCanvas.getBoundingClientRect();
-        const scaleX = canvasRect.width / this.surface.gameWidth;
-        const scaleY = canvasRect.height / this.surface.gameHeight;
-        
-        const left = (x * scaleX) + canvasRect.left;
-        const top = (y * scaleY) + canvasRect.top;
-        const scaledWidth = width * scaleX;
-        
-        // Open keyboard with proper positioning
-        this.surface.game.openKeyboard(
-            control.inputMasked ? 'password' : 'text',
-            control.text,
-            control.maxLength,
+    setMobileFocus(control, text) {
+        const { mudclient } = this.surface;
+
+        if (!mudclient.options.mobile) {
+            return;
+        }
+
+        const isPassword = this.controlMaskText[control];
+
+        const isListInput =
+            this.controlType[control] === controlTypes.LIST_INPUT;
+
+        const width = this.controlWidth[control];
+        const height = this.controlHeight[control];
+
+        const left = isListInput
+            ? this.controlX[control]
+            : this.controlX[control] - Math.floor(width / 2);
+
+        mudclient.openKeyboard(
+            isPassword ? 'password' : 'text',
+            text,
+            this.controlInputMaxLen[control],
             {
+                width: `${width}px`,
+                height: `${height}px`,
+                top: `${this.controlY[control] - Math.floor(height / 2)}px`,
                 left: `${left}px`,
-                top: `${top}px`,
-                width: `${scaledWidth}px`,
-                height: `${height * scaleY}px`,
-                opacity: '0.7',
-                color: 'white',
-                backgroundColor: 'rgba(0,0,0,0.7)',
-                border: '1px solid #444'
+                fontSize: isListInput ? '12px' : '14px',
+                textAlign: isListInput ? 'left' : 'center'
             }
         );
-        
-        // Track which control has focus
-        this.focusControlId = controlId;
     }
 }
 

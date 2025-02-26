@@ -319,25 +319,36 @@ class GameShell {
     }
 
     openKeyboard(type = 'text', text, maxLength, style) {
-        this.mobileInputCaret = -1;
-        this.lastMobileInput = text;
-        this.toggleKeyboard = true;
-
-        this.mobileInputEl =
-            type === 'password' ? this.mobilePassword : this.mobileInput;
-
-        this.mobileInputEl.value = text;
-        this.mobileInputEl.maxLength = maxLength;
-
+        console.log('Opening mobile keyboard', type, text);
+        
+        // Choose the right input element based on type
+        this.mobileInputEl = (type === 'password') ? this.mobilePassword : this.mobileInput;
+        
+        // Set up the input
+        this.mobileInputEl.value = text || '';
+        this.mobileInputEl.maxLength = maxLength || 256;
+        
+        // Position and style the input
         this.mobileInputEl.style.display = 'block';
-
-        for (const [name, value] of Object.entries(style)) {
-            this.mobileInputEl.style[name] = value;
+        
+        // Apply custom styles if provided
+        if (style) {
+            Object.assign(this.mobileInputEl.style, style);
         }
-
-        this.keyboardUpdateInterval = setInterval(() => {
-            this.mobileKeyboardUpdate();
-        }, 125);
+        
+        // Focus the input to show keyboard
+        setTimeout(() => {
+            this.mobileInputEl.focus();
+            
+            // Start update interval to sync input with game
+            if (this.keyboardUpdateInterval) {
+                clearInterval(this.keyboardUpdateInterval);
+            }
+            
+            this.keyboardUpdateInterval = setInterval(() => {
+                this.mobileKeyboardUpdate();
+            }, 125);
+        }, 100);
     }
 
     mobileKeyDown(e) {
@@ -350,33 +361,23 @@ class GameShell {
     mobileKeyboardUpdate() {
         if (!this.mobileInputEl) return;
         
-        this.mobileInputCaret = this.mobileInputEl.selectionStart;
         const newInput = this.mobileInputEl.value;
-        
         if (newInput === this.lastMobileInput) return;
         
-        console.log('Panel input changed:', newInput);
+        console.log('Input changed:', newInput);
         
-        // Update text in panel control
-        if (this.loginScreen === 1) {
-            // Register panel
-            const controlId = this.panelLoginNewUser.focusControlId;
-            if (controlId !== undefined) {
-                this.panelLoginNewUser.updateText(controlId, newInput);
-            }
-        } else if (this.loginScreen === 2) {
-            // Login panel
-            const controlId = this.panelLoginExistingUser.focusControlId;
-            if (controlId !== undefined) {
-                this.panelLoginExistingUser.updateText(controlId, newInput);
-            }
+        // In loginScreen mode, update panel text directly
+        if (this.loginScreen === 1 || this.loginScreen === 2) {
+            // Let the panel handle it
         } else {
-            // Game chat input
-            for (let i = 0; i < this.lastMobileInput.length; i += 1) {
-                this.keyPressed({ keyCode: keycodes.BACKSPACE });
+            // For in-game chat input
+            // Clear previous input
+            for (let i = 0; i < this.lastMobileInput.length; i++) {
+                this.keyPressed({ keyCode: 8 }); // Backspace
             }
             
-            for (let i = 0; i < newInput.length; i += 1) {
+            // Type new input
+            for (let i = 0; i < newInput.length; i++) {
                 this.keyPressed({ 
                     key: newInput[i],
                     keyCode: newInput.charCodeAt(i)
