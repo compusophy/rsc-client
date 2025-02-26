@@ -30,7 +30,7 @@
                 overflow: hidden;
             }
             
-            #virtualKeyboardBtn {
+            #keyboardButton {
                 position: fixed;
                 bottom: 20px;
                 right: 20px;
@@ -42,55 +42,64 @@
                 font-size: 16px;
                 z-index: 1000;
                 cursor: pointer;
+                display: none; /* Hidden by default, shown via JS for mobile */
             }
         </style>
     </head>
     <body>
+        <button id="keyboardButton">⌨️ Text</button>
+        
         <script src="https://cdn.jsdelivr.net/npm/@farcaster/frame-sdk/dist/index.min.js"></script>
         <script>
             document.addEventListener('DOMContentLoaded', function() {
                 frame.sdk.actions.ready();
                 
-                // Only show keyboard button on mobile
-                if (/Mobi|Android/i.test(navigator.userAgent)) {
-                    const keyboardBtn = document.createElement('button');
-                    keyboardBtn.id = 'virtualKeyboardBtn';
-                    keyboardBtn.innerText = '⌨️ Keyboard';
-                    document.body.appendChild(keyboardBtn);
-                    
-                    keyboardBtn.addEventListener('click', function() {
-                        const text = prompt("Enter text:");
-                        if (text && window.mc) {
-                            // Clear current input
-                            for (let i = 0; i < window.mc.inputTextCurrent.length; i++) {
-                                const event = new KeyboardEvent('keydown', {
-                                    keyCode: 8, // backspace
-                                    which: 8
-                                });
-                                document.dispatchEvent(event);
-                            }
-                            
-                            // Type new text
-                            for (let i = 0; i < text.length; i++) {
-                                const event = new KeyboardEvent('keydown', {
-                                    key: text[i],
-                                    keyCode: text.charCodeAt(i),
-                                    which: text.charCodeAt(i)
-                                });
-                                document.dispatchEvent(event);
-                            }
-                            
-                            // Send enter key to submit
-                            setTimeout(() => {
-                                const enterEvent = new KeyboardEvent('keydown', {
-                                    keyCode: 13, // enter
-                                    which: 13
-                                });
-                                document.dispatchEvent(enterEvent);
-                            }, 100);
-                        }
-                    });
+                // Show keyboard button on mobile devices
+                if (/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)) {
+                    document.getElementById('keyboardButton').style.display = 'block';
                 }
+            });
+            
+            // Handle keyboard button clicks
+            document.getElementById('keyboardButton').addEventListener('click', function() {
+                if (!window.mc) {
+                    alert("Game not loaded yet. Please try again in a moment.");
+                    return;
+                }
+                
+                // Get textual input via prompt
+                const inputText = prompt("Enter text:");
+                if (inputText === null || inputText === "") return;
+                
+                // Check login screen first
+                if (window.mc.loginScreen === 1 || window.mc.loginScreen === 2) {
+                    // We're at the login screen
+                    if (window.mc.loginUserInput === "") {
+                        // Username field is empty, fill it
+                        window.mc.loginUserInput = inputText;
+                    } else {
+                        // Username field has text, fill password
+                        window.mc.loginPassInput = inputText;
+                    }
+                    return;
+                }
+                
+                // If we're in the game, this is likely a chat message
+                window.mc.inputTextCurrent = inputText;
+                window.mc.inputTextFinal = inputText;
+                
+                // Force a key press to submit the text
+                setTimeout(function() {
+                    const enterEvent = new KeyboardEvent('keydown', {
+                        bubbles: true,
+                        cancelable: true,
+                        key: 'Enter',
+                        code: 'Enter',
+                        keyCode: 13,
+                        which: 13
+                    });
+                    document.dispatchEvent(enterEvent);
+                }, 100);
             });
         </script>
         <script src="./index.bundle.js"></script>

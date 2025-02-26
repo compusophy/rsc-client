@@ -15,28 +15,36 @@ if (typeof window === 'undefined') {
     wrapperContainer.style.height = '100vh';
     wrapperContainer.style.width = '100%';
     
-    // Create game container with proper aspect ratio
-    const gameContainer = document.createElement('div');
-    gameContainer.style.position = 'relative';
-    gameContainer.style.width = '100%';
-    gameContainer.style.maxWidth = '512px';
-    gameContainer.style.aspectRatio = '512/346';
+    // Create the game container
+    const mcContainer = document.createElement('div');
     
-    wrapperContainer.appendChild(gameContainer);
+    // Add the game container to the wrapper
+    wrapperContainer.appendChild(mcContainer);
     
-    // Detect if we're on mobile
+    const args = window.location.hash.slice(1).split(',');
+    const mc = new mudclient(mcContainer);
+    
+    // Make client globally accessible
+    window.mc = mc;
+    window.mcOptions = mc.options;
+
+    // Detect mobile devices
     const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     
-    // Initialize the game client
-    const mc = window.mc = new mudclient(gameContainer);
-    
-    // Directly set options instead of calling setOptions
-    mc.options.middleClickCamera = true;
-    mc.options.mouseWheel = true;
-    mc.options.resetCompass = true;
-    mc.options.zoomCamera = true;
-    mc.options.accountManagement = true;
-    mc.options.mobile = isMobile; // Auto-detect mobile devices
+    Object.assign(mc.options, {
+        middleClickCamera: true,
+        mouseWheel: true,
+        resetCompass: true,
+        zoomCamera: true,
+        accountManagement: true,
+        mobile: isMobile  // Only enable mobile mode on actual mobile devices
+    });
+
+    mc.members = args[0] === 'members';
+    mc.server = args[1] ? args[1] : 'rsc-server-production.up.railway.app';
+    mc.port = args[2] && !isNaN(+args[2]) ? +args[2] : 
+        (mc.server.includes('railway.app') ? null : 43595);
+    mc.threadSleep = 10;
     
     // Style the body
     document.body.style.margin = '0';

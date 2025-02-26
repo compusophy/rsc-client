@@ -11,7 +11,7 @@ const version = require('./version');
 const sleep = require('sleep-promise');
 
 const CHAR_MAP =
-    'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!"\243$%^&' +
+    'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!"\xa3$%^&' +
     "*()-_=+[{]};:'@#~,<.>/?\\| ";
 
 const FONTS = [
@@ -72,7 +72,7 @@ class GameShell {
             accountManagement: true,
             fpsCounter: false,
             retryLoginOnDisconnect: true,
-            mobile: true
+            mobile: false  // Default to desktop mode
         };
 
         this.middleButtonDown = false;
@@ -134,7 +134,11 @@ class GameShell {
         this.appletWidth = width;
         this.appletHeight = height;
 
-        if (this.options.mobile) {
+        // Detect if we're actually on a mobile device
+        const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        
+        // Setup touch handlers for mobile devices, mouse handlers for desktop
+        if (this.options.mobile && isMobileDevice) {
             this._canvas.addEventListener('touchstart', (e) => {
                 // Prevent default behavior for better control but allow scrolling
                 if (e.touches.length === 1) {
@@ -242,6 +246,7 @@ class GameShell {
                 this.mouseReleased(e);
             });
         } else {
+            // Desktop mouse handlers
             this._canvas.addEventListener(
                 'mousedown',
                 this.mousePressed.bind(this)
