@@ -136,31 +136,65 @@ class GameShell {
 
         if (this.options.mobile) {
             this._canvas.addEventListener('touchstart', (e) => {
-                //e.preventDefault();
+                // Prevent default behavior for better control but allow scrolling
+                if (e.touches.length === 1) {
+                    e.preventDefault();
+                }
 
                 console.log('touchstart');
 
                 if (e.touches.length === 1) {
+                    // Store the initial touch position
+                    this.touchStartX = e.touches[0].clientX;
+                    this.touchStartY = e.touches[0].clientY;
+                    
                     clearTimeout(this.rightClickTimeout);
 
                     this.rightClickTimeout = setTimeout(() => {
+                        // Set the flag to prevent normal click when we release
                         this.disableEndClick = true;
 
-                        e = {
+                        // Visual feedback
+                        if (window.navigator && window.navigator.vibrate) {
+                            window.navigator.vibrate(50);
+                        }
+
+                        // Create a more complete simulated event
+                        const simulatedEvent = {
                             button: 2,
                             clientX: e.touches[0].clientX,
-                            clientY: e.touches[0].clientY
+                            clientY: e.touches[0].clientY,
+                            preventDefault: () => {}
                         };
 
-                        this.mousePressed(e);
-                        this.mouseReleased(e);
+                        // First trigger a mouse press with right button
+                        this.mousePressed(simulatedEvent);
+                        
+                        // Then immediately release to complete the click
+                        this.mouseReleased(simulatedEvent);
+                        
+                        // Set this flag if the game uses it for context menus
+                        this.showRightClickMenu = true;
                     }, 500);
                 } else {
-                    // scroll
+                    // Handle multi-touch (e.g., for scrolling)
+                    clearTimeout(this.rightClickTimeout);
                 }
             });
 
             this._canvas.addEventListener('touchmove', (e) => {
+                // Calculate the distance moved
+                if (e.touches.length === 1 && this.touchStartX !== undefined) {
+                    const deltaX = e.touches[0].clientX - this.touchStartX;
+                    const deltaY = e.touches[0].clientY - this.touchStartY;
+                    const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+                    
+                    // If moved more than a small threshold, cancel the right-click timer
+                    if (distance > 10) {
+                        clearTimeout(this.rightClickTimeout);
+                    }
+                }
+
                 //e.preventDefault();
 
                 console.log('touchmoving');
@@ -196,17 +230,15 @@ class GameShell {
                 clearTimeout(this.rightClickTimeout);
 
                 e = {
-                    button: this.touchMoving ? 1 : 0,
+                    button: 0,
                     clientX: e.changedTouches[0].clientX,
                     clientY: e.changedTouches[0].clientY
                 };
 
-                if (this.touchMoving) {
-                    this.touchMoving = false;
-                } else {
-                    this.mousePressed(e);
-                }
-
+                this.mousePressed(e);
+                
+                this.touchMoving = false;
+                
                 this.mouseReleased(e);
             });
         } else {
