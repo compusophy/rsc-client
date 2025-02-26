@@ -30,14 +30,13 @@ if (typeof window === 'undefined') {
     // Initialize the game client
     const mc = window.mc = new mudclient(gameContainer);
     
-    mc.setOptions({
-        middleClickCamera: true,
-        mouseWheel: true,
-        resetCompass: true,
-        zoomCamera: true,
-        accountManagement: true,
-        mobile: isMobile  // Auto-detect mobile devices
-    });
+    // Directly set options instead of calling setOptions
+    mc.options.middleClickCamera = true;
+    mc.options.mouseWheel = true;
+    mc.options.resetCompass = true;
+    mc.options.zoomCamera = true;
+    mc.options.accountManagement = true;
+    mc.options.mobile = isMobile; // Auto-detect mobile devices
     
     // Style the body
     document.body.style.margin = '0';
