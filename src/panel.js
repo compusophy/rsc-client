@@ -127,23 +127,18 @@ class Panel {
             this.mouseMetaButtonHeld = 0;
         }
 
-        // TODO i don't think we need this? what was controlType 15?
-        /*if (lastButton === 1 || this.mouseMetaButtonHeld > 20) {
+        if (this.surface.game.options.mobile && isDown === 1) {
             for (let i = 0; i < this.controlCount; i++) {
-                if (
-                    this.controlShown[i] &&
-                    this.controlType[i] === 15 &&
-                    this.mouseX >= this.controlX[i] &&
-                    this.mouseY >= this.controlY[i] &&
+                if (this.controlType[i] === controlTypes.TEXT_INPUT &&
+                    this.mouseX >= this.controlX[i] && 
                     this.mouseX <= this.controlX[i] + this.controlWidth[i] &&
-                    this.mouseY <= this.controlY[i] + this.controlHeight[i]
-                ) {
-                    this.controlClicked[i] = true;
+                    this.mouseY >= this.controlY[i] - 12 && 
+                    this.mouseY <= this.controlY[i] + 4) {
+                    
+                    this.setMobileFocus(i);
                 }
             }
-
-            this.mouseMetaButtonHeld -= 5;
-        }*/
+        }
     }
 
     isClicked(control) {
@@ -1359,38 +1354,47 @@ class Panel {
         return this.controlListEntryMouseOver[control];
     }
 
-    setMobileFocus(control, text) {
-        const { mudclient } = this.surface;
-
-        if (!mudclient.options.mobile) {
-            return;
-        }
-
-        const isPassword = this.controlMaskText[control];
-
-        const isListInput =
-            this.controlType[control] === controlTypes.LIST_INPUT;
-
-        const width = this.controlWidth[control];
-        const height = this.controlHeight[control];
-
-        const left = isListInput
-            ? this.controlX[control]
-            : this.controlX[control] - Math.floor(width / 2);
-
-        mudclient.openKeyboard(
-            isPassword ? 'password' : 'text',
-            text,
-            this.controlInputMaxLen[control],
+    setMobileFocus(controlId) {
+        if (!this.surface.game.options.mobile) return;
+        
+        // Find the text input control
+        const control = this.controls[controlId];
+        if (!control || control.type !== Panel.CONTROL_TEXT_INPUT) return;
+        
+        // Get text input position and size
+        const x = control.x;
+        const y = control.y;
+        const width = control.width;
+        const height = control.height || 12;
+        
+        // Calculate position relative to canvas
+        const canvasRect = this.surface.gameCanvas.getBoundingClientRect();
+        const scaleX = canvasRect.width / this.surface.gameWidth;
+        const scaleY = canvasRect.height / this.surface.gameHeight;
+        
+        const left = (x * scaleX) + canvasRect.left;
+        const top = (y * scaleY) + canvasRect.top;
+        const scaledWidth = width * scaleX;
+        
+        // Open keyboard with proper positioning
+        this.surface.game.openKeyboard(
+            control.inputMasked ? 'password' : 'text',
+            control.text,
+            control.maxLength,
             {
-                width: `${width}px`,
-                height: `${height}px`,
-                top: `${this.controlY[control] - Math.floor(height / 2)}px`,
                 left: `${left}px`,
-                fontSize: isListInput ? '12px' : '14px',
-                textAlign: isListInput ? 'left' : 'center'
+                top: `${top}px`,
+                width: `${scaledWidth}px`,
+                height: `${height * scaleY}px`,
+                opacity: '0.7',
+                color: 'white',
+                backgroundColor: 'rgba(0,0,0,0.7)',
+                border: '1px solid #444'
             }
         );
+        
+        // Track which control has focus
+        this.focusControlId = controlId;
     }
 }
 

@@ -348,29 +348,42 @@ class GameShell {
     }
 
     mobileKeyboardUpdate() {
+        if (!this.mobileInputEl) return;
+        
         this.mobileInputCaret = this.mobileInputEl.selectionStart;
-
         const newInput = this.mobileInputEl.value;
-
-        if (newInput === this.lastMobileInput) {
-            return;
+        
+        if (newInput === this.lastMobileInput) return;
+        
+        console.log('Panel input changed:', newInput);
+        
+        // Update text in panel control
+        if (this.loginScreen === 1) {
+            // Register panel
+            const controlId = this.panelLoginNewUser.focusControlId;
+            if (controlId !== undefined) {
+                this.panelLoginNewUser.updateText(controlId, newInput);
+            }
+        } else if (this.loginScreen === 2) {
+            // Login panel
+            const controlId = this.panelLoginExistingUser.focusControlId;
+            if (controlId !== undefined) {
+                this.panelLoginExistingUser.updateText(controlId, newInput);
+            }
+        } else {
+            // Game chat input
+            for (let i = 0; i < this.lastMobileInput.length; i += 1) {
+                this.keyPressed({ keyCode: keycodes.BACKSPACE });
+            }
+            
+            for (let i = 0; i < newInput.length; i += 1) {
+                this.keyPressed({ 
+                    key: newInput[i],
+                    keyCode: newInput.charCodeAt(i)
+                });
+            }
         }
-
-        console.log('Input changed:', newInput);  // Debug logging
-
-        // Clear previous input
-        for (let i = 0; i < this.lastMobileInput.length; i += 1) {
-            this.keyPressed({ keyCode: keycodes.BACKSPACE });
-        }
-
-        // Send new input character by character
-        for (let i = 0; i < newInput.length; i += 1) {
-            this.keyPressed({ 
-                key: newInput[i],
-                keyCode: newInput.charCodeAt(i)
-            });
-        }
-
+        
         this.lastMobileInput = newInput;
     }
 
